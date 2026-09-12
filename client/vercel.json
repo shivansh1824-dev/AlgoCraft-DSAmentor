@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://localhost:5000/api/$1"
+      "destination": "https://algocraft-dsamentor.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
