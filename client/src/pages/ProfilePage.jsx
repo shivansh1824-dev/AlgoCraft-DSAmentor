@@ -18,9 +18,11 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { exportProfilePortfolioMarkdown } from "../utils/exportUtils.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [solutions, setSolutions] = useState([]);
   const [sheets, setSheets] = useState([]);
@@ -63,26 +65,30 @@ export default function ProfilePage() {
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-500 p-0.5 shadow-lg shadow-indigo-500/20">
             <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-black text-2xl text-white">
-              S
+              {(user?.user_metadata?.full_name || user?.email || "S")[0].toUpperCase()}
             </div>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-white">Shivansh Rai</h1>
+              <h1 className="text-2xl font-extrabold text-white">
+                {user?.user_metadata?.full_name || (user?.email ? user.email.split("@")[0] : "Shivansh Rai")}
+              </h1>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                 100% Free Plan
               </span>
             </div>
-            <p className="text-xs text-slate-400">GLBITM B.Tech CSE (DS) • AlgoCraft Lead Architect</p>
+            <p className="text-xs text-slate-400">
+              {user?.user_metadata?.full_name ? "AlgoCraft Developer" : "GLBITM B.Tech CSE (DS) • AlgoCraft Lead Architect"}
+            </p>
             <div className="pt-1">
               <a
-                href="mailto:shivanshrai282@gmail.com"
+                href={`mailto:${user?.email || "shivanshrai282@gmail.com"}`}
                 className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-mono transition-colors"
-                title="Send Email"
+                title="Email Address"
               >
                 <Mail className="w-3.5 h-3.5" />
-                <span>shivanshrai282@gmail.com</span>
+                <span>{user?.email || "shivanshrai282@gmail.com"}</span>
               </a>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Mail,
@@ -27,6 +27,19 @@ export default function AuthModal({ isOpen, onClose }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Enable closing with Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -40,14 +53,22 @@ export default function AuthModal({ isOpen, onClose }) {
         await signIn(email, password);
         onClose();
       } else {
-        await signUp(email, password, { full_name: name || email.split("@")[0] });
-        setSuccessMsg("Account created! Check your email inbox to confirm your registration.");
-        setTimeout(() => {
-          onClose();
-        }, 2000);
+        const res = await signUp(email, password, { full_name: name || email.split("@")[0] });
+        if (res?.session) {
+          setSuccessMsg("Account created and signed in successfully!");
+          setTimeout(() => {
+            onClose();
+          }, 1200);
+        } else {
+          setSuccessMsg("Account created! If your email requires confirmation, check your inbox to confirm, or use Instant Demo Sign In.");
+          setTimeout(() => {
+            onClose();
+          }, 3500);
+        }
       }
     } catch (err) {
-      setErrorMsg(err.message || "Authentication failed. Please check credentials.");
+      const msg = err.message || "Authentication failed. Please check credentials.";
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -62,13 +83,18 @@ export default function AuthModal({ isOpen, onClose }) {
     }
   };
 
-  const handleDemoSignIn = () => {
-    demoLogin("Shivansh Rai", "shivanshrai282@gmail.com");
+  const handleDemoSignIn = (customEmail, customName) => {
+    const chosenEmail = customEmail || email || "shivanshrai282@gmail.com";
+    const chosenName = customName || name || (chosenEmail ? chosenEmail.split("@")[0] : "Shivansh Rai");
+    demoLogin(chosenName, chosenEmail);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
         className="relative w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl shadow-indigo-500/10 space-y-6"
         onClick={(e) => e.stopPropagation()}
@@ -77,6 +103,7 @@ export default function AuthModal({ isOpen, onClose }) {
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
+          title="Close (Esc)"
         >
           <X className="w-5 h-5" />
         </button>
@@ -88,12 +115,12 @@ export default function AuthModal({ isOpen, onClose }) {
             <span>Supabase Cloud Authentication</span>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">
-            {mode === "signin" ? "Welcome to AlgoCraft" : "Create Developer Account"}
+            {mode === "signin" ? "Welcome Back to AlgoCraft" : "Create Developer Account"}
           </h2>
           <p className="text-xs text-slate-400">
             {mode === "signin"
               ? "Sign in to sync your solved solutions, sheets, and streak"
-              : "Start saving custom problem sheets and track spaced repetition"}
+              : "Register your new email to start saving custom problem sheets"}
           </p>
         </div>
 
@@ -112,7 +139,7 @@ export default function AuthModal({ isOpen, onClose }) {
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Sign In
+            Sign In (Existing)
           </button>
           <button
             type="button"
@@ -127,7 +154,7 @@ export default function AuthModal({ isOpen, onClose }) {
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Sign Up
+            Sign Up (New Email)
           </button>
         </div>
 
@@ -139,23 +166,40 @@ export default function AuthModal({ isOpen, onClose }) {
               <span>Supabase Keys Pending in .env</span>
             </div>
             <p className="text-[11px] text-amber-200/80 leading-relaxed">
-              Add <code className="text-white font-mono bg-amber-950/60 px-1 py-0.5 rounded">VITE_SUPABASE_URL</code> to connect live database, or use the 1-Click Demo login below.
+              Add <code className="text-white font-mono bg-amber-950/60 px-1 py-0.5 rounded">VITE_SUPABASE_URL</code> to connect live database, or use Instant Sign In below.
             </p>
           </div>
         )}
 
         {/* Error / Success Alerts */}
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-2 text-xs text-rose-300">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <span>{errorMsg}</span>
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 space-y-2 text-xs text-rose-300">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+            {mode === "signin" && (
+              <div className="pl-6 pt-1.5 border-t border-rose-500/20 text-[11px] text-rose-200 flex flex-col gap-1.5">
+                <span>Signing in with a new email? Create an account first:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("signup");
+                    setErrorMsg("");
+                  }}
+                  className="self-start text-xs font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                >
+                  👉 Click here to Switch to "Sign Up" with {email || "this email"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {successMsg && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-2 text-xs text-emerald-300">
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-2 text-xs text-emerald-300">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <span>{successMsg}</span>
+            <span className="leading-relaxed">{successMsg}</span>
           </div>
         )}
 
@@ -189,7 +233,7 @@ export default function AuthModal({ isOpen, onClose }) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Shivansh Rai"
+                  placeholder="e.g. Alex Chen"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-sans transition-colors"
                   required={mode === "signup"}
                 />
@@ -244,20 +288,65 @@ export default function AuthModal({ isOpen, onClose }) {
             disabled={loading}
             className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>{loading ? "Processing..." : mode === "signin" ? "Sign In" : "Create Account"}</span>
+            <span>{loading ? "Processing..." : mode === "signin" ? "Sign In" : "Create Account & Sign In"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        {/* 1-Click Demo Bypass Button */}
-        <div className="pt-2 border-t border-slate-800/80">
+        {/* Mode Switch Helper */}
+        <div className="text-center pt-1">
+          {mode === "signin" ? (
+            <p className="text-xs text-slate-400">
+              Need to register a new email?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signup");
+                  setErrorMsg("");
+                  setSuccessMsg("");
+                }}
+                className="text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer ml-1"
+              >
+                Create Account (Sign Up)
+              </button>
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setErrorMsg("");
+                  setSuccessMsg("");
+                }}
+                className="text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer ml-1"
+              >
+                Sign In
+              </button>
+            </p>
+          )}
+        </div>
+
+        {/* Instant Access Options */}
+        <div className="pt-2 border-t border-slate-800/80 space-y-2">
+          {email && (
+            <button
+              type="button"
+              onClick={() => handleDemoSignIn(email, name)}
+              className="w-full py-2 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 fill-indigo-400 text-indigo-400" />
+              <span>Instant Sign In as "{email.split("@")[0]}" (Skip Cloud Auth)</span>
+            </button>
+          )}
           <button
             type="button"
-            onClick={handleDemoSignIn}
+            onClick={() => handleDemoSignIn("shivanshrai282@gmail.com", "Shivansh Rai")}
             className="w-full py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Zap className="w-3.5 h-3.5 fill-emerald-400" />
-            <span>Instant Demo Sign In (Shivansh Rai)</span>
+            <span>1-Click Demo Sign In (Shivansh Rai)</span>
           </button>
         </div>
       </div>
