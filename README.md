@@ -1,115 +1,300 @@
-# AlgoCraft — AI-Powered DSA Mentor & Technical Interview Studio 🚀
+<p align="center">
+  <img src="client/public/images/a_clean_modern_minimal_dark_themed_hero_banner.png" alt="AlgoCraft" width="100%">
+</p>
 
-![AlgoCraft Platform](client/public/images/hero_algo_bg.jpg)
+<h1 align="center">⚡ AlgoCraft</h1>
 
-**AlgoCraft** is a 100% free, full-stack AI-powered Data Structures & Algorithms mentor and technical interview preparation studio built for placement aspirants and competitive programmers. It features zero credit tokens, zero paywalls, and deep pedagogical tooling designed around algorithmic intuition.
+<p align="center">
+  <strong>AI-Powered DSA Mentor • Algorithm Visualizer • Interview Studio</strong>
+</p>
+
+<p align="center">
+  <i>Learn • Visualize • Practice • Revise • Master</i>
+</p>
+
+<p align="center">
+  <a href="https://algo-craft-dsa-mentor.vercel.app/">
+    <img src="https://img.shields.io/badge/🚀_Live_Demo-AlgoCraft-06b6d4?style=for-the-badge" alt="Live Demo">
+  </a>
+  <a href="https://github.com/shivansh1824-dev/AlgoCraft-DSAmentor">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub">
+  </a>
+</p>
 
 ---
 
-## ✨ Key Features & Architecture
+## 🧠 About AlgoCraft
 
-### 1. 🔮 Problem Studio (`/studio`)
-- **Auto-Import from URLs**: Live URL metadata extractor for LeetCode and GeeksforGeeks problems.
-- **Triple-Approach Deconstruction**: Automatically evolves problem solutions from quadratic **Brute Force**, to log-linear **Better**, to peak **Optimal $O(N)$** implementations.
-- **Tailored Depth Controls**: Standard or Deep-Dive generation with custom multi-language support (C++, Python, Java, JavaScript).
+**AlgoCraft** is an AI-powered learning platform built to make **Data Structures & Algorithms preparation more interactive, structured, and effective**.
 
-### 2. ⚡ Solution Masterclass (`/solution/:id`)
-- **Interactive Dry-Run Debugger**: Step-by-step execution trace player with active pointer spotlighting and variable state tables.
-- **Voice-Enabled Speech Mentor**: Integrated browser speech synthesis for hands-free audio walkthroughs of algorithmic intuition.
-- **Visual Big-O Complexity Graph & TLE Simulator**: Input size $N$ slider ($10$ to $10^6$), live operation counter, judge timeout threshold ($10^8$ ops), and FAANG constraints rule of thumb.
-- **AI Edge-Case & Complexity Stress Matrix**: Automatically checks code against 5 classic interviewer breaking scenarios (empty inputs, single elements, reversed arrays, duplicates, and integer overflow).
-- **1-Click Markdown & Clean Print Export**: Download complete study guides as GitHub-ready `.md` files or print directly to PDF.
+Instead of simply giving a solution, AlgoCraft helps users understand the journey from:
 
-### 3. 🎬 Interactive Algorithm Visualizer Studio (`/visualizer`)
-- **5 Array & Pointer Algorithms**: Binary Search, Two Pointers (Two Sum II), Sliding Window (Max Subarray), Dutch National Flag (0, 1, 2 Sort), and Monotonic Stack (Next Greater Element).
-- **Binary Tree BFS & Graph BFS Visualizers**: Animated SVG Tree and Graph canvases with glowing node illumination, queue expansion, and shortest-path highlighting.
-- **Synchronized Code Spotlight**: Real-time line-by-line code execution tracking with speed controls ($0.5\times$ to $2\times$), custom inputs, and randomizers.
+> **Brute Force → Better → Optimal**
 
-### 4. 🎴 DSA Pattern Flashcards & Spaced Repetition (`/flashcards`)
-- **12 Canonical Patterns**: 3D animated flip cards with problem recognition cues on the front, and optimal blueprint code templates, pitfalls, and complexities on the back.
-- **SM-2 Spaced Repetition Engine**: `Again (<10m)`, `Hard (+1d)`, `Good (+3d)`, `Easy (+7d)` schedule with persistent `localStorage` mastery tracking.
+while combining AI mentorship, algorithm visualization, curated problem sheets, spaced repetition, and mock interviews in one platform.
 
-### 5. 📖 FAANG Pattern Recognition Cheat Sheet Matrix (`/cheatsheet`)
-- High-density matrix covering all 14 algorithmic patterns with trigger keywords, asymptotic complexity limits, copyable starter blueprints, interviewer trap warnings, and direct LeetCode problem links.
+---
 
-### 6. 📋 Problem Sheets Tracker (`/sheets`)
-- Build custom problem sheets with section-wise progress meters, 1-click solve navigation, LeetCode auto-fill, and GitHub-ready checklist export (`- [x]` / `- [ ]`).
+## ✨ Features
 
-### 7. ⏱️ FAANG Mock Technical Interview Studio (`/interview`)
-- 45-minute timed phone screens simulating real interviews at **Google**, **Meta**, **Amazon**, and **Microsoft**.
-- Progressive 3-tier hints ladder and AI Bar Raiser scorecard evaluating correctness, optimization, and communication.
+### 🤖 AI DSA Mentor
 
-### 8. 💻 In-Browser Code Playground (`/playground`)
-- Multi-language in-browser execution runner.
-- **Multi-Test Case Studio**: Manage and run multiple test cases with side-by-side **Expected vs. Actual Output** validation and runtime metrics (ms).
-- **Side-by-Side Diff Viewer**: Split code comparison against AlgoCraft's optimal solution with 1-click "Adopt Code".
+Get guided explanations for coding problems with:
 
-### 9. 🎓 Candidate Portfolio & Streak Tracker (`/profile`)
-- Daily streak flame counter, solved problem difficulty distribution charts (Easy, Medium, Hard), and 1-click portfolio export.
+* 💡 Problem intuition
+* 🔄 Brute Force → Better → Optimal approaches
+* ⏱️ Time complexity analysis
+* 💾 Space complexity analysis
+* 🧪 Step-by-step dry runs
+* ⚠️ Edge-case identification
+* 💻 C++, Java, Python & JavaScript support
+
+---
+
+### 📊 Interactive Algorithm Visualizer
+
+Understand algorithms by **seeing them in action**.
+
+| 🔢 Visualizer        | 📌 Concept                    |
+| -------------------- | ----------------------------- |
+| 🌳 Binary Tree       | Tree construction & traversal |
+| 🔗 Linked List       | Nodes, pointers & operations  |
+| 🫧 Bubble Sort       | Comparisons & swaps           |
+| 🔄 Floyd's Algorithm | Cycle detection               |
+| 📚 Stack & Queue     | LIFO & FIFO operations        |
+| 📈 Complexity        | Algorithm growth comparison   |
+
+---
+
+### 📚 DSA Problem Playlists
+
+Prepare using popular interview sheets:
+
+* 🎯 **Blind 75**
+* 🧩 **NeetCode 150**
+* 🔥 **Striver SDE Sheet**
+* 📝 Custom problem playlists
+
+You can also import problems using URLs from:
+
+**LeetCode • GeeksforGeeks • Codeforces**
+
+---
+
+### 🧠 Spaced Repetition Flashcards
+
+Turn solved problems into long-term knowledge.
+
+* 🃏 Interactive 3D flashcards
+* 🔁 Spaced repetition
+* 🧠 Recall-based difficulty grading
+* 🔊 Browser-based audio revision
+* 📅 Smart review scheduling
+
+---
+
+### 🎯 AI Mock Interviews
+
+Practice coding interviews in a realistic environment.
+
+* ⏱️ Timed interview sessions
+* 🏢 Company-focused preparation
+* 💻 C++, Java & Python
+* 🧪 Code evaluation
+* 📊 Complexity analysis
+* 📝 Detailed interview feedback
+* 🏆 Hiring-style verdicts
+
+---
+
+### 💬 Conversational DSA Mentor
+
+Have a conversation with your personal DSA mentor and ask questions such as:
+
+> *"Why does Kadane's algorithm reset the sum to 0?"*
+
+> *"How can I detect a negative cycle using Bellman-Ford?"*
+
+Get explanations focused on **understanding the concept rather than memorizing the code**.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Axios, React Router v6
-- **Backend**: Node.js, Express, Mongoose / MongoDB Atlas (with in-memory fallback storage)
-- **AI Intelligence**: Google Gemini API via `@google/genai` (100% free configuration)
-- **Deployment**: Client on Vercel / Netlify; Server on Render / Railway / Node host
+### 🎨 Frontend
+
+<p>
+  <img src="https://img.shields.io/badge/React_18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind">
+  <img src="https://img.shields.io/badge/React_Router-CA4245?style=flat-square&logo=reactrouter&logoColor=white" alt="React Router">
+  <img src="https://img.shields.io/badge/Axios-5A29E4?style=flat-square&logo=axios&logoColor=white" alt="Axios">
+</p>
+
+### ⚙️ Backend
+
+<p>
+  <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Express.js-000000?style=flat-square&logo=express&logoColor=white" alt="Express">
+  <img src="https://img.shields.io/badge/Cheerio-FFB13B?style=flat-square&logoColor=black" alt="Cheerio">
+</p>
+
+### 🧠 AI & Data
+
+<p>
+  <img src="https://img.shields.io/badge/Google_Gemini-4285F4?style=flat-square&logo=google&logoColor=white" alt="Google Gemini">
+  <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=black" alt="Supabase">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+</p>
+
+### ☁️ Deployment
+
+<p>
+  <img src="https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel">
+  <img src="https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=black" alt="Render">
+</p>
 
 ---
 
-## 🚀 Quick Start Guide
+## 🏗️ Project Structure
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-
-### 1. Clone & Setup
-```bash
-git clone https://github.com/your-username/Algo-Craft.git
-cd Algo-Craft
+```text
+AlgoCraft-DSAmentor/
+│
+├── 📁 client/
+│   ├── 📁 public/
+│   │   └── 📁 images/
+│   │       └── 🖼️ a_clean_modern_minimal_dark_themed_hero_banner.png
+│   └── 📁 src/
+│
+├── 📁 server/
+│   ├── 📄 index.js
+│   └── 📦 package.json
+│
+├── 📄 supabase_schema.sql
+└── 📄 README.md
 ```
 
-### 2. Backend Server Setup
+---
+
+## 🚀 Getting Started
+
+### 📋 Prerequisites
+
+Make sure you have installed:
+
+* 🟢 Node.js 18+
+* 🔧 Git
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/shivansh1824-dev/AlgoCraft-DSAmentor.git
+cd AlgoCraft-DSAmentor
+```
+
+### 2️⃣ Setup the Backend
+
 ```bash
 cd server
 npm install
+cp .env.example .env
+node index.js
 ```
 
-Create a `.env` file in `server/`:
-```env
-PORT=5000
-MONGODB_URI=your_mongodb_atlas_uri_optional
-GEMINI_API_KEY=your_gemini_api_key_optional
-```
-*(Note: AlgoCraft automatically falls back to in-memory storage if MongoDB is not provided!)*
+The backend will run on:
 
-Start the backend:
-```bash
-npm run dev
-# Server running at http://localhost:5000
+```text
+http://localhost:5000
 ```
 
-### 3. Frontend Client Setup
-In another terminal:
+### 3️⃣ Setup the Frontend
+
+Open a new terminal:
+
 ```bash
 cd client
 npm install
+cp .env.example .env
 npm run dev
-# Client running at http://localhost:5173
+```
+
+The frontend will run on:
+
+```text
+http://localhost:5173
 ```
 
 ---
 
-## 📦 Production Build
-To create an optimized production bundle:
-```bash
-cd client
-npm run build
+## 🔄 How AlgoCraft Works
+
+```text
+             🧑‍💻 Problem
+                  │
+                  ▼
+          🤖 AI DSA Mentor
+                  │
+       ┌──────────┼──────────┐
+       ▼          ▼          ▼
+   🔴 Brute    🟡 Better   🟢 Optimal
+       │          │          │
+       └──────────┼──────────┘
+                  ▼
+           📊 Visualize
+                  │
+                  ▼
+          🧪 Practice & Solve
+                  │
+                  ▼
+          🧠 Revise & Recall
+                  │
+                  ▼
+           🎯 Mock Interview
 ```
+
+---
+
+## 🎯 Vision
+
+AlgoCraft brings the complete DSA preparation cycle into one place:
+
+**🧠 Learn → 👀 Visualize → 💻 Practice → 🔁 Revise → 🎯 Interview**
+
+The goal is simple:
+
+> **Build better problem solvers, not just better code writers.**
+
+---
+
+## 🌐 Links
+
+🚀 **Live Application**
+https://algo-craft-dsa-mentor.vercel.app/
+
+💻 **GitHub Repository**
+https://github.com/shivansh1824-dev/AlgoCraft-DSAmentor
+
+---
+
+## 👨‍💻 Author
+
+**Shivansh Rai**
+
+🐙 GitHub: https://github.com/shivansh1824-dev
 
 ---
 
 ## 📄 License
-This project is open-source under the **MIT License**.
-*AlgoCraft — Crafted for Technical Interview Mastery.*
+
+This project is licensed under the **MIT License**.
+
+---
+
+<p align="center">
+  <strong>⚡ AlgoCraft — Craft a Better You.</strong>
+</p>
+
+<p align="center">
+  <i>Built for developers who want to understand algorithms, not just solve them.</i>
+</p>
