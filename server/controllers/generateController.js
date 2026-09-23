@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Solution, inMemorySolutions } from "../models/solutionModel.js";
 import { User } from "../models/userModel.js";
 import { generateGeminiContent } from "../services/geminiService.js";
@@ -244,27 +245,29 @@ export const generateSolution = async (req, res) => {
     inMemorySolutions.set(solutionId, newSolution);
 
     // Save to MongoDB if connected
-    try {
-      const dbDoc = new Solution({
-        ...newSolution,
-        _id: undefined // let Mongo generate or use default
-      });
-      await dbDoc.save();
-      newSolution._id = dbDoc._id.toString();
-    } catch (dbErr) {
-      // MongoDB not connected or in fallback mode
-    }
-
-    // 3. Update User Solved Stats
-    try {
-      const user = await User.findOne({ uid: newSolution.userId });
-      if (user) {
-        user.problemsSolved += 1;
-        user.lastActiveDate = new Date();
-        await user.save();
+    if (mongoose.connection?.readyState === 1) {
+      try {
+        const dbDoc = new Solution({
+          ...newSolution,
+          _id: undefined // let Mongo generate or use default
+        });
+        await dbDoc.save();
+        newSolution._id = dbDoc._id.toString();
+      } catch (dbErr) {
+        // MongoDB save error ignored
       }
-    } catch (userErr) {
-      // ignore user save errors in offline mode
+
+      // 3. Update User Solved Stats
+      try {
+        const user = await User.findOne({ uid: newSolution.userId });
+        if (user) {
+          user.problemsSolved += 1;
+          user.lastActiveDate = new Date();
+          await user.save();
+        }
+      } catch (userErr) {
+        // ignore user save errors
+      }
     }
 
     return res.status(201).json({
@@ -289,17 +292,20 @@ export const getSolutions = async (req, res) => {
     const { search = "", topic = "", difficulty = "", platform = "", bookmarked } = req.query;
 
     let solutions = [];
-    try {
-      const query = {};
-      if (topic) query["problem.topic"] = topic;
-      if (difficulty) query["problem.difficulty"] = difficulty;
-      if (platform) query["problem.platform"] = platform;
-      if (bookmarked === "true") query.bookmarked = true;
-      if (search) query["problem.name"] = { $regex: search, $options: "i" };
+    if (mongoose.connection?.readyState === 1) {
+      try {
+        const query = {};
+        if (topic) query["problem.topic"] = topic;
+        if (difficulty) query["problem.difficulty"] = difficulty;
+        if (platform) query["problem.platform"] = platform;
+        if (bookmarked === "true") query.bookmarked = true;
+        if (search) query["problem.name"] = { $regex: search, $options: "i" };
 
-      solutions = await Solution.find(query).sort({ createdAt: -1 }).limit(50).lean();
-    } catch (err) {
-      // fallback to inMemorySolutions
+        solutions = await Solution.find(query).sort({ createdAt: -1 }).limit(50).lean();
+      } catch (err) {
+        solutions = Array.from(inMemorySolutions.values());
+      }
+    } else {
       solutions = Array.from(inMemorySolutions.values());
     }
 
@@ -332,11 +338,13 @@ export const getSolutionById = async (req, res) => {
       return res.json({ success: true, solution: inMemorySolutions.get(id) });
     }
 
-    try {
-      const doc = await Solution.findById(id).lean();
-      if (doc) return res.json({ success: true, solution: doc });
-    } catch (err) {
-      // not found in Mongo
+    if (mongoose.connection?.readyState === 1) {
+      try {
+        const doc = await Solution.findById(id).lean();
+        if (doc) return res.json({ success: true, solution: doc });
+      } catch (err) {
+        // not found in Mongo
+      }
     }
 
     return res.status(404).json({ error: "Solution not found." });

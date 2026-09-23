@@ -8,9 +8,17 @@ const GEMINI_MODELS = [
  * Generate structured content using Google Gemini API
  */
 export const generateGeminiContent = async (systemPrompt, userPrompt) => {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey || apiKey.length < 10) {
     throw new Error("Missing or invalid GEMINI_API_KEY in environment.");
+  }
+
+  // Fast-fail if the key is obviously an OAuth token or invalid format
+  if (apiKey.startsWith("AQ.") || !apiKey.startsWith("AIzaSy")) {
+    throw new Error(
+      "GEMINI_API_KEY must be a valid Google AI Studio API key starting with 'AIzaSy'. " +
+      "Get a free API key at https://aistudio.google.com/app/apikey."
+    );
   }
 
   let lastError = null;
@@ -32,18 +40,26 @@ export const generateGeminiContent = async (systemPrompt, userPrompt) => {
         }
       };
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        body: JSON.stringify(requestBody)
-      });
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         const errorText = await response.text();
         console.warn(`⚠️ Model ${model} returned status ${response.status}:`, errorText.slice(0, 200));
+        // If unauthenticated or forbidden, the key itself is wrong — abort trying other models
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(`Gemini Authentication Failed (${response.status}): ${errorText.slice(0, 150)}`);
+        }
         lastError = new Error(`Gemini API error (${model} - ${response.status}): ${errorText}`);
         continue;
       }
@@ -60,6 +76,9 @@ export const generateGeminiContent = async (systemPrompt, userPrompt) => {
     } catch (err) {
       console.warn(`⚠️ Attempt with ${model} failed:`, err.message);
       lastError = err;
+      if (err.message.includes("Gemini Authentication Failed")) {
+        throw err;
+      }
     }
   }
 
