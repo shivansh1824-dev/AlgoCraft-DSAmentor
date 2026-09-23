@@ -5,7 +5,6 @@ import {
   Sparkles,
   Compass,
   History,
-  Terminal,
   Flame,
   Menu,
   X,
@@ -18,7 +17,8 @@ import {
   Palette,
   LogIn,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  FileCode2
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -40,7 +40,7 @@ export default function Navbar() {
     { name: "Visualizer", path: "/visualizer", icon: PlayCircle },
     { name: "Cheat Sheet", path: "/cheatsheet", icon: BookOpen },
     { name: "Flashcards", path: "/flashcards", icon: Brain },
-    { name: "Playground", path: "/playground", icon: Terminal },
+    { name: "Code Editor", path: "/playground", icon: FileCode2 },
   ];
 
   const secondaryLinks = [

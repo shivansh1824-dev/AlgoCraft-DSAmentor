@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Copy, Check, Terminal, ExternalLink } from "lucide-react";
+import { Copy, Check, FileCode2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function CodeViewer({ code, language = "C++", title, onSendToPlayground }) {
@@ -43,10 +43,10 @@ export default function CodeViewer({ code, language = "C++", title, onSendToPlay
           <button
             onClick={handlePlayground}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-            title="Open in Code Playground"
+            title="Open in Code Editor"
           >
-            <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-[11px] font-medium">Test in Playground</span>
+            <FileCode2 className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-[11px] font-medium">Open in Code Editor</span>
           </button>
 
           <button

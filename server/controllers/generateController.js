@@ -15,7 +15,7 @@ You must return ONLY valid, raw JSON matching this exact schema:
       "name": "Approach Name",
       "intuition": "Why this naive approach works and its fundamental flaw",
       "stepByStep": ["Step 1", "Step 2", "Step 3"],
-      "code": "// Full implementation in requested language",
+      "code": "REAL COMPILABLE CODE — see rules below",
       "timeComplexity": "O(...)",
       "spaceComplexity": "O(...)",
       "complexityReason": "Detailed mathematical justification",
@@ -27,7 +27,7 @@ You must return ONLY valid, raw JSON matching this exact schema:
       "name": "Approach Name",
       "intuition": "How we improve upon brute force",
       "stepByStep": ["Step 1", "Step 2"],
-      "code": "// Implementation",
+      "code": "REAL COMPILABLE CODE",
       "timeComplexity": "O(...)",
       "spaceComplexity": "O(...)",
       "complexityReason": "Why runtime dropped",
@@ -39,7 +39,7 @@ You must return ONLY valid, raw JSON matching this exact schema:
       "name": "Approach Name",
       "intuition": "The optimal algorithmic breakthrough",
       "stepByStep": ["Step 1", "Step 2", "Step 3"],
-      "code": "// Optimal clean production code",
+      "code": "REAL COMPILABLE CODE",
       "timeComplexity": "O(...)",
       "spaceComplexity": "O(...)",
       "complexityReason": "Proof of optimality",
@@ -65,11 +65,99 @@ You must return ONLY valid, raw JSON matching this exact schema:
   "interviewTips": [
     "Tip 1 for discussing with interviewer",
     "Tip 2"
-  ]
+  ],
+  "platformTemplate": {
+    "cpp": "exact C++ LeetCode starter template with correct function name, return type, and params for THIS problem",
+    "java": "exact Java LeetCode starter template with correct function name, return type, and params for THIS problem",
+    "python": "exact Python LeetCode starter template with correct function name, return type, and params for THIS problem"
+  }
 }
 
-Ensure all code is syntactically complete, strictly in the requested target language, and well-commented.
+=== CRITICAL CODE GENERATION RULES — MANDATORY ===
+
+RULE 1 — NO PSEUDOCODE EVER:
+Every "code" field MUST be real, syntactically correct, compilable source code.
+NEVER write pseudocode or skeleton placeholders like "// check condition", "// do something", or empty loop bodies.
+Every function body must contain a COMPLETE, WORKING implementation.
+
+RULE 2 — C++ FORMAT (when Target Language is C++):
+- Include all required headers: #include <vector>, #include <string>, #include <unordered_map>, #include <algorithm>, etc.
+- Add: using namespace std;
+- Wrap in: class Solution { public: ... };
+- All methods are public member functions with correct LeetCode signature.
+- Example for "Two Sum":
+    #include <vector>
+    #include <unordered_map>
+    using namespace std;
+    class Solution {
+    public:
+        vector<int> twoSum(vector<int>& nums, int target) {
+            unordered_map<int,int> seen;
+            for (int i = 0; i < (int)nums.size(); i++) {
+                int comp = target - nums[i];
+                if (seen.count(comp)) return {seen[comp], i};
+                seen[nums[i]] = i;
+            }
+            return {};
+        }
+    };
+
+RULE 3 — Java FORMAT (when Target Language is Java):
+- Add import java.util.*; at the top when collections are needed.
+- Wrap in: class Solution { public returnType methodName(params) { ... } }
+- Use correct Java types: int[], List<Integer>, Map<Integer,Integer>, String, etc.
+
+RULE 4 — Python FORMAT (when Target Language is Python):
+- Add from typing import List, Dict, Optional, Tuple as needed.
+- Wrap in: class Solution: followed by def with type hints.
+- Example: def twoSum(self, nums: List[int], target: int) -> List[int]:
+- Use Pythonic code: dict, enumerate, zip, comprehensions, etc.
+
+RULE 5 — JavaScript FORMAT (when Target Language is JavaScript):
+- Use ES6+: const, let, arrow functions, Map, Set, destructuring.
+- LeetCode format: var methodName = function(params) { ... };
+
+RULE 6 — C FORMAT (when Target Language is C):
+- #include <stdio.h>, #include <stdlib.h>, #include <string.h>
+- Plain C function with pointer parameters as LeetCode expects.
+
+RULE 7 — platformTemplate:
+- MUST contain the ACTUAL, SPECIFIC function signature for THIS problem (not a generic placeholder).
+- Infer the exact LeetCode function name, return type, and parameter types from the problem name and topic.
+- The template has the class + signature pre-filled with an empty body (just a return stub or pass).
+- The programmer will paste this into LeetCode/GFG and fill in the body.
+- For C++ Two Sum template example: "#include <vector>\\n#include <unordered_map>\\nusing namespace std;\\n\\nclass Solution {\\npublic:\\n    vector<int> twoSum(vector<int>& nums, int target) {\\n        // Write your solution here\\n        \\n    }\\n};"
+
 Do NOT include any markdown code blocks (such as \`\`\`json). Return raw JSON only.`;
+
+/**
+ * Strengthen the user prompt to reinforce language-specific real code requirement
+ */
+const buildUserPrompt = (problemData, depth, mode) => {
+  const langMap = {
+    "C++": "C++ (with #include headers, using namespace std, class Solution wrapper)",
+    "Java": "Java (with import java.util.*, class Solution wrapper)",
+    "Python": "Python (with from typing import List/Dict/etc., class Solution wrapper)",
+    "JavaScript": "JavaScript (ES6+, var methodName = function(...) {} LeetCode format)",
+    "TypeScript": "TypeScript (with proper type annotations, LeetCode class format)",
+    "C": "C (with #include <stdlib.h>, plain functions with pointer params)"
+  };
+
+  const langFull = langMap[problemData.language] || problemData.language;
+
+  return `Problem: ${problemData.name}
+Platform: ${problemData.platform} ${problemData.url ? `(${problemData.url})` : ""}
+Topic: ${problemData.topic}
+Difficulty: ${problemData.difficulty}
+Target Programming Language: ${langFull}
+User's Current Stuck Point / Question: ${problemData.stuckPoint || "Looking for complete optimal breakdown"}
+Requested Depth: ${depth}
+Requested Mode: ${mode}
+
+IMPORTANT: Generate REAL, COMPILABLE ${problemData.language} code only. NOT pseudocode.
+All "code" fields must contain actual working implementations in ${problemData.language} with correct syntax.
+The "platformTemplate" must have the exact LeetCode/GFG function signature for "${problemData.name}".`;
+};
 
 /**
  * Generate a comprehensive DSA solution breakdown
@@ -107,17 +195,7 @@ export const generateSolution = async (req, res) => {
 
     // 1. Try Gemini API
     try {
-      const userPrompt = `
-Problem: ${problemData.name}
-Platform: ${problemData.platform} ${problemData.url ? `(${problemData.url})` : ""}
-Topic: ${problemData.topic}
-Difficulty: ${problemData.difficulty}
-Target Programming Language: ${problemData.language}
-User's Current Stuck Point / Question: ${problemData.stuckPoint || "Looking for optimal breakdown"}
-Requested Depth: ${depth}
-Requested Mode: ${mode}
-`;
-
+      const userPrompt = buildUserPrompt(problemData, depth, mode);
       content = await generateGeminiContent(SYSTEM_PROMPT, userPrompt);
     } catch (aiError) {
       console.warn("⚠️ Gemini API unavailable, generating with intelligent fallback engine:", aiError.message);

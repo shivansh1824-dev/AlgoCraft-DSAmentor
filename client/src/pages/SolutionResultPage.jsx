@@ -498,7 +498,8 @@ export default function SolutionResultPage() {
                         state: {
                           code,
                           language: lang,
-                          problemName: problem.name
+                          problemName: problem.name,
+                          solution: solution  // pass full solution for hints + platform template
                         }
                       });
                     }}
