@@ -18,6 +18,52 @@
   }
 }
 
+/* ─── Dynamic Cyber Accent Theme Palettes (Tailwind v4 tokens) ─── */
+[data-theme="emerald"] {
+  --color-indigo-300: #6ee7b7;
+  --color-indigo-400: #34d399;
+  --color-indigo-500: #10b981;
+  --color-indigo-600: #059669;
+  --color-indigo-700: #047857;
+  --color-indigo-800: #065f46;
+}
+
+[data-theme="violet"] {
+  --color-indigo-300: #c4b5fd;
+  --color-indigo-400: #a78bfa;
+  --color-indigo-500: #8b5cf6;
+  --color-indigo-600: #7c3aed;
+  --color-indigo-700: #6d28d9;
+  --color-indigo-800: #5b21b6;
+}
+
+[data-theme="rose"] {
+  --color-indigo-300: #fda4af;
+  --color-indigo-400: #fb7185;
+  --color-indigo-500: #f43f5e;
+  --color-indigo-600: #e11d48;
+  --color-indigo-700: #be123c;
+  --color-indigo-800: #9f1239;
+}
+
+[data-theme="amber"] {
+  --color-indigo-300: #fde68a;
+  --color-indigo-400: #fbbf24;
+  --color-indigo-500: #f59e0b;
+  --color-indigo-600: #d97706;
+  --color-indigo-700: #b45309;
+  --color-indigo-800: #92400e;
+}
+
+[data-theme="cyan"] {
+  --color-indigo-300: #67e8f9;
+  --color-indigo-400: #22d3ee;
+  --color-indigo-500: #06b6d4;
+  --color-indigo-600: #0891b2;
+  --color-indigo-700: #0e7490;
+  --color-indigo-800: #155e75;
+}
+
 /* Custom Utilities for Premium Visuals */
 .glass-panel {
   background: rgba(17, 24, 39, 0.7);
@@ -34,8 +80,8 @@
 }
 
 .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1);
+  border-color: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.45);
+  box-shadow: 0 10px 25px -5px var(--theme-glow, rgba(99, 102, 241, 0.15));
   transform: translateY(-2px);
 }
 
@@ -44,7 +90,7 @@
 }
 
 .glow-indigo {
-  box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 25px -5px var(--theme-glow, rgba(99, 102, 241, 0.25));
 }
 
 .gradient-border {
@@ -61,7 +107,7 @@
   z-index: -1;
   margin: -1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(16, 185, 129, 0.4), rgba(30, 41, 59, 0.8));
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb, 99, 102, 241), 0.6), rgba(var(--theme-primary-light-rgb, 129, 140, 248), 0.4), rgba(30, 41, 59, 0.8));
 }
 
 /* Custom Scrollbars */

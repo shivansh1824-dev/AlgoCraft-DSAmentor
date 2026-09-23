@@ -13,7 +13,8 @@ import {
   createSheet,
   updateSheet,
   toggleProblemCompleted,
-  deleteSheet
+  deleteSheet,
+  extractSheetFromText
 } from "../controllers/sheetsController.js";
 import {
   startInterview,
@@ -155,6 +156,7 @@ router.post("/playground/run", (req, res) => {
 router.get("/sheets", getSheets);
 router.get("/sheets/:id", getSheetById);
 router.post("/sheets", createSheet);
+router.post("/sheets/ai-extract", extractSheetFromText);
 router.put("/sheets/:id", updateSheet);
 router.patch("/sheets/:id/toggle", toggleProblemCompleted);
 router.delete("/sheets/:id", deleteSheet);

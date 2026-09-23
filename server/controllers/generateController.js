@@ -122,11 +122,27 @@ RULE 6 — C FORMAT (when Target Language is C):
 - Plain C function with pointer parameters as LeetCode expects.
 
 RULE 7 — platformTemplate:
-- MUST contain the ACTUAL, SPECIFIC function signature for THIS problem (not a generic placeholder).
-- Infer the exact LeetCode function name, return type, and parameter types from the problem name and topic.
-- The template has the class + signature pre-filled with an empty body (just a return stub or pass).
-- The programmer will paste this into LeetCode/GFG and fill in the body.
-- For C++ Two Sum template example: "#include <vector>\\n#include <unordered_map>\\nusing namespace std;\\n\\nclass Solution {\\npublic:\\n    vector<int> twoSum(vector<int>& nums, int target) {\\n        // Write your solution here\\n        \\n    }\\n};"
+- MUST contain the ACTUAL, SPECIFIC function signature for THIS problem on the target platform (not a generic placeholder).
+- Infer the exact function name, return type, and parameter types from the problem name, topic, and platform convention.
+- The template has the class + signature pre-filled with an empty body (or simple return stub).
+- The programmer will copy this directly into LeetCode or GeeksforGeeks and complete the body.
+
+RULE 8 — PLATFORM-SPECIFIC SIGNATURES & READY-TO-SUBMIT CODE:
+- Identify the target platform (LeetCode, GeeksforGeeks, HackerRank, etc.).
+- For LeetCode:
+  * In C++: Wrap in class Solution { public: <returnType> <methodName>(<params>) { ... } };
+  * In Java: Wrap in class Solution { public <returnType> <methodName>(<params>) { ... } }
+  * In Python: Wrap in class Solution: def <methodName>(self, <params>) -> <returnType>: ...
+  * Use standard LeetCode parameter conventions (e.g. nums, target, head, root, s, matrix).
+- For GeeksforGeeks:
+  * In C++: Wrap in class Solution { public: <returnType> <methodName>(<params>) { ... } };
+  * In Java: Wrap in class Solution { public <returnType> <methodName>(<params>) { ... } }
+  * In Python: Wrap in class Solution: def <methodName>(self, <params>): ...
+  * Use standard GFG parameter conventions (e.g. arr, n, target, head, root).
+- ALL 3 APPROACHES (Brute Force, Better, Optimal) MUST BE 100% SUBMIT-READY on the platform:
+  * NEVER use main() or print statements (cout, System.out.println, print) for the answer.
+  * Every approach MUST execute the logic and return the computed value matching the method's return type.
+  * Include necessary headers/imports at the top so the file is self-contained.
 
 Do NOT include any markdown code blocks (such as \`\`\`json). Return raw JSON only.`;
 
@@ -154,9 +170,10 @@ User's Current Stuck Point / Question: ${problemData.stuckPoint || "Looking for 
 Requested Depth: ${depth}
 Requested Mode: ${mode}
 
-IMPORTANT: Generate REAL, COMPILABLE ${problemData.language} code only. NOT pseudocode.
-All "code" fields must contain actual working implementations in ${problemData.language} with correct syntax.
-The "platformTemplate" must have the exact LeetCode/GFG function signature for "${problemData.name}".`;
+CRITICAL INSTRUCTIONS:
+1. Generate REAL, COMPILABLE ${problemData.language} code matching the exact function signature and input parameters required for submission on ${problemData.platform}.
+2. All 3 approaches (Brute Force, Better, Optimal) must be valid, fully implemented, and ready to submit on ${problemData.platform} (return the computed result directly).
+3. The "platformTemplate" must have the exact ${problemData.platform} class and method boilerplate for "${problemData.name}".`;
 };
 
 /**

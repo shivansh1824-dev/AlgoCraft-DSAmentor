@@ -77,6 +77,16 @@ export const THEMES = {
 
 const ThemeContext = createContext();
 
+// Hex to rgb helper
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+  const bigint = parseInt(clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `${r}, ${g}, ${b}`;
+}
+
 export function ThemeProvider({ children }) {
   const [themeKey, setThemeKey] = useState(() => {
     return localStorage.getItem("algocraft_theme") || "indigo";
@@ -86,9 +96,18 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem("algocraft_theme", themeKey);
-    // Set root style properties for custom dynamic accent glow
-    document.documentElement.style.setProperty("--theme-primary", activeTheme.primary);
-    document.documentElement.style.setProperty("--theme-primary-light", activeTheme.primaryLight);
+    const root = document.documentElement;
+    root.setAttribute("data-theme", themeKey);
+
+    // Dynamic CSS variables for instant site-wide accent retheming
+    root.style.setProperty("--theme-primary", activeTheme.primary);
+    root.style.setProperty("--theme-primary-light", activeTheme.primaryLight);
+    root.style.setProperty("--theme-primary-rgb", hexToRgb(activeTheme.primary));
+    root.style.setProperty("--theme-primary-light-rgb", hexToRgb(activeTheme.primaryLight));
+    root.style.setProperty("--theme-badge-bg", `rgba(${hexToRgb(activeTheme.primary)}, 0.12)`);
+    root.style.setProperty("--theme-badge-border", `rgba(${hexToRgb(activeTheme.primary)}, 0.35)`);
+    root.style.setProperty("--theme-badge-text", activeTheme.primaryLight);
+    root.style.setProperty("--theme-glow", `rgba(${hexToRgb(activeTheme.primary)}, 0.28)`);
   }, [themeKey, activeTheme]);
 
   return (

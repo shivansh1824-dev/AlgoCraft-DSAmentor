@@ -43,6 +43,47 @@ export default function MentorChatDrawer({ isOpen, onClose, solution }) {
     }
   }, [messages, isOpen]);
 
+  const generateOfflineMentorReply = (query, ctx) => {
+    const q = query.toLowerCase();
+    const name = ctx.name || "this problem";
+    const lang = ctx.language || "C++";
+
+    if (q.includes("time") || q.includes("complexity") || q.includes("o(") || q.includes("runtime")) {
+      return `**Time Complexity Analysis for ${name}:**\n\nThe optimal approach runs in **${ctx.timeComplexity || "O(n)"}**.\n\n- Each element or state is visited a constant number of times.\n- Operations inside the loop (lookups, arithmetic, pointer moves) take $O(1)$ time.\n- In interviews, make sure to state whether the complexity is worst-case or amortized!`;
+    }
+
+    if (q.includes("space") || q.includes("memory") || q.includes("auxiliary")) {
+      return `**Space Complexity Analysis for ${name}:**\n\nThe auxiliary space is **${ctx.spaceComplexity || "O(1)"}**.\n\n- ${ctx.spaceComplexity === "O(1)" ? "The algorithm operates strictly in-place using only a few primitive pointer variables." : `The auxiliary data structure can store up to $n$ elements in the worst case.`}\n- If an interviewer asks you to optimize memory further, discuss whether an in-place approach is possible at the expense of runtime.`;
+    }
+
+    if (q.includes("edge") || q.includes("duplicate") || q.includes("empty") || q.includes("null") || q.includes("boundary") || q.includes("negative")) {
+      const edges = ctx.edgeCases?.length
+        ? ctx.edgeCases.map(e => `• ${e}`).join("\n")
+        : `• Empty or single-element inputs\n• Inputs with duplicate values\n• Extreme boundary values (e.g. INT_MAX, INT_MIN)`;
+      return `**Critical Edge Cases for ${name}:**\n\n${edges}\n\n*Pro-tip for interviews:* Always test your whiteboard trace with at least two of these edge cases before telling the interviewer you're done!`;
+    }
+
+    if (q.includes("mistake") || q.includes("bug") || q.includes("wrong") || q.includes("error") || q.includes("trap")) {
+      const mistakes = ctx.commonMistakes?.length
+        ? ctx.commonMistakes.map(m => `• ${m}`).join("\n")
+        : `• Off-by-one errors in loop boundaries\n• Not handling duplicates properly\n• Modifying state while iterating`;
+      return `**Common Traps in ${name}:**\n\n${mistakes}\n\nDouble-check these points when writing your solution!`;
+    }
+
+    if (q.includes("code") || q.includes("line") || q.includes("implement") || q.includes("syntax")) {
+      return `**Optimal Implementation Insight (${lang}):**\n\n${ctx.optimalCode ? `\`\`\`${lang.toLowerCase()}\n${ctx.optimalCode}\n\`\`\`\n\n` : ""}Key idea: The algorithm enforces a strict loop invariant. Every variable transition directly progresses toward the base condition without unnecessary recalculations.`;
+    }
+
+    if (q.includes("step") || q.includes("how") || q.includes("algorithm") || q.includes("approach")) {
+      const steps = ctx.stepByStep?.length
+        ? ctx.stepByStep.map((s, i) => `${i + 1}. **${s.title || `Step ${i + 1}`}**: ${s.detail || s}`).join("\n")
+        : ctx.optimalIntuition;
+      return `**Step-by-Step Logic for ${name}:**\n\n${steps}\n\nNotice how each step preserves correctness while keeping runtime strictly at **${ctx.timeComplexity || "O(n)"}**.`;
+    }
+
+    return `**Mentor Insight for ${name}:**\n\n${ctx.optimalIntuition || "Focus on the core invariant: verify what information from previous iterations eliminates redundant search."}\n\n- **Target Runtime:** ${ctx.timeComplexity || "O(n)"}\n- **Auxiliary Space:** ${ctx.spaceComplexity || "O(1)"}\n\nWhat specific line or test case would you like to dry run together?`;
+  };
+
   const handleSend = async (userText) => {
     const query = (userText || input).trim();
     if (!query || loading) return;
@@ -52,11 +93,31 @@ export default function MentorChatDrawer({ isOpen, onClose, solution }) {
     setInput("");
     setLoading(true);
 
+    const optimalApproach =
+      solution?.content?.approaches?.find((a) => a.level === "Optimal") ||
+      solution?.content?.approaches?.[0];
+
+    const problemContext = {
+      name: solution?.problem?.name || "Problem Analysis",
+      topic: solution?.problem?.topic || "DSA",
+      difficulty: solution?.problem?.difficulty || "Medium",
+      platform: solution?.problem?.platform || "LeetCode",
+      language: solution?.problem?.language || "C++",
+      optimalIntuition: optimalApproach?.intuition || "",
+      optimalCode: optimalApproach?.code || "",
+      timeComplexity: optimalApproach?.timeComplexity || "O(n)",
+      spaceComplexity: optimalApproach?.spaceComplexity || "O(1)",
+      stepByStep: optimalApproach?.stepByStep || [],
+      edgeCases: solution?.content?.edgeCases || [],
+      commonMistakes: solution?.content?.commonMistakes || []
+    };
+
     try {
       const res = await axios.post("/api/chat", {
         solutionId: solution?._id || "temp_solution",
         message: query,
-        history: newMessages.slice(-6)
+        history: newMessages.slice(-6),
+        problemContext
       });
 
       if (res.data?.reply) {
@@ -64,14 +125,15 @@ export default function MentorChatDrawer({ isOpen, onClose, solution }) {
           ...prev,
           { role: "mentor", text: res.data.reply }
         ]);
+        return;
       }
+      throw new Error("No reply returned");
     } catch (err) {
+      // Dynamic problem-anchored mentor reply based on user's exact query
+      const reply = generateOfflineMentorReply(query, problemContext);
       setMessages((prev) => [
         ...prev,
-        {
-          role: "mentor",
-          text: "Notice that by maintaining the invariant state at each step, you can prove the correctness of the optimal approach. In interview conditions, be sure to verbally state your boundary checks!"
-        }
+        { role: "mentor", text: reply }
       ]);
     } finally {
       setLoading(false);

@@ -19,10 +19,16 @@ import {
   X,
   Globe,
   Loader2,
-  Download
+  Download,
+  UploadCloud,
+  FileUp,
+  FileText,
+  Check,
+  AlertCircle
 } from "lucide-react";
 import axios from "axios";
 import { exportSheetMarkdown } from "../utils/exportUtils.js";
+import { extractTextFromPDF } from "../utils/pdfExtractor.js";
 
 export default function SheetsPage() {
   const navigate = useNavigate();
@@ -33,6 +39,17 @@ export default function SheetsPage() {
   const [isNewSheetModalOpen, setIsNewSheetModalOpen] = useState(false);
   const [newSheetTitle, setNewSheetTitle] = useState("");
   const [newSheetDesc, setNewSheetDesc] = useState("");
+
+  // Custom Sheet Import state (PDF, CSV/Text, JSON)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importTab, setImportTab] = useState("pdf"); // 'pdf' | 'paste' | 'json'
+  const [importTitle, setImportTitle] = useState("");
+  const [importText, setImportText] = useState("");
+  const [pdfFile, setPdfFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importStatus, setImportStatus] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importSuccess, setImportSuccess] = useState("");
 
   // Adding Section state
   const [isAddingSection, setIsAddingSection] = useState(false);
@@ -73,21 +90,42 @@ export default function SheetsPage() {
     fetchSheets();
   }, []);
 
+  const saveCustomSheetsLocally = (sheetsList) => {
+    try {
+      const customOnly = sheetsList.filter((s) => !s.isTemplate);
+      localStorage.setItem("algocraft_custom_sheets", JSON.stringify(customOnly));
+    } catch (e) {}
+  };
+
   const fetchSheets = async () => {
     setLoading(true);
+    let serverSheets = [];
     try {
       const res = await axios.get("/api/sheets");
       if (res.data?.sheets) {
-        setSheets(res.data.sheets);
-        if (!selectedSheetId && res.data.sheets.length > 0) {
-          setSelectedSheetId(res.data.sheets[0]._id);
-        }
+        serverSheets = res.data.sheets;
       }
     } catch (err) {
-      console.error("Error loading sheets:", err);
-    } finally {
-      setLoading(false);
+      console.warn("Server sheets offline, loading from local storage:", err.message);
     }
+
+    // Merge with locally saved custom sheets
+    let localCustom = [];
+    try {
+      localCustom = JSON.parse(localStorage.getItem("algocraft_custom_sheets") || "[]");
+    } catch (e) {}
+
+    const mergedMap = new Map();
+    [...localCustom, ...serverSheets].forEach((s) => {
+      if (s && s._id) mergedMap.set(s._id, s);
+    });
+
+    const finalSheets = Array.from(mergedMap.values());
+    setSheets(finalSheets);
+    if (!selectedSheetId && finalSheets.length > 0) {
+      setSelectedSheetId(finalSheets[0]._id);
+    }
+    setLoading(false);
   };
 
   const currentSheet = sheets.find((s) => s._id === selectedSheetId) || sheets[0] || null;
@@ -114,6 +152,7 @@ export default function SheetsPage() {
       };
     });
     setSheets(updatedSheets);
+    saveCustomSheetsLocally(updatedSheets);
 
     try {
       await axios.patch(`/api/sheets/${currentSheet._id}/toggle`, {
@@ -122,12 +161,11 @@ export default function SheetsPage() {
         completed: !currentStatus
       });
     } catch (err) {
-      console.error("Failed to toggle completion status:", err);
-      fetchSheets(); // revert on error
+      console.error("Failed to sync toggle to backend:", err);
     }
   };
 
-  // Create new sheet
+  // Create new blank sheet
   const handleCreateSheet = async (e) => {
     e.preventDefault();
     if (!newSheetTitle.trim()) return;
@@ -145,15 +183,161 @@ export default function SheetsPage() {
       });
 
       if (res.data?.sheet) {
-        setSheets([res.data.sheet, ...sheets]);
+        const updated = [res.data.sheet, ...sheets];
+        setSheets(updated);
         setSelectedSheetId(res.data.sheet._id);
+        saveCustomSheetsLocally(updated);
         setNewSheetTitle("");
         setNewSheetDesc("");
         setIsNewSheetModalOpen(false);
       }
     } catch (err) {
-      console.error("Failed to create sheet:", err);
+      // Local fallback creation if backend offline
+      const localSheet = {
+        _id: "sheet_local_" + Date.now(),
+        title: newSheetTitle.trim(),
+        description: newSheetDesc.trim(),
+        isTemplate: false,
+        sections: [
+          {
+            id: "sec_" + Date.now(),
+            title: "Arrays & Core Patterns",
+            problems: []
+          }
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      const updated = [localSheet, ...sheets];
+      setSheets(updated);
+      setSelectedSheetId(localSheet._id);
+      saveCustomSheetsLocally(updated);
+      setNewSheetTitle("");
+      setNewSheetDesc("");
+      setIsNewSheetModalOpen(false);
     }
+  };
+
+  // Import from PDF
+  const handleImportPdf = async () => {
+    if (!pdfFile) {
+      setImportError("Please select a PDF file first.");
+      return;
+    }
+    setImportLoading(true);
+    setImportError("");
+    setImportStatus("Extracting text and decoding PDF streams...");
+
+    try {
+      const extractedText = await extractTextFromPDF(pdfFile);
+      if (!extractedText || extractedText.length < 20) {
+        throw new Error("Could not extract readable problem text from this PDF. You can paste the problem names directly into the Quick Paste tab.");
+      }
+
+      setImportStatus(`Analyzing ${extractedText.length} characters with AI curriculum parser...`);
+
+      const res = await axios.post("/api/sheets/ai-extract", {
+        text: extractedText,
+        title: importTitle.trim() || pdfFile.name.replace(/\.pdf$/i, ""),
+        filename: pdfFile.name
+      });
+
+      if (res.data?.sheet) {
+        const newSheet = res.data.sheet;
+        const updated = [newSheet, ...sheets];
+        setSheets(updated);
+        setSelectedSheetId(newSheet._id);
+        saveCustomSheetsLocally(updated);
+        setIsImportModalOpen(false);
+        setPdfFile(null);
+        setImportTitle("");
+        setImportSuccess(`Imported "${newSheet.title}" with ${newSheet.sections?.reduce((a, s) => a + s.problems.length, 0)} problems across ${newSheet.sections?.length} topics!`);
+        setTimeout(() => setImportSuccess(""), 5000);
+      } else {
+        throw new Error("Failed to structure sheet from PDF.");
+      }
+    } catch (err) {
+      console.error("PDF import error:", err);
+      setImportError(err.response?.data?.error || err.message);
+    } finally {
+      setImportLoading(false);
+      setImportStatus("");
+    }
+  };
+
+  // Import from Pasted Text / CSV
+  const handleImportText = async () => {
+    if (!importText.trim()) {
+      setImportError("Please paste problem names or lines first.");
+      return;
+    }
+    setImportLoading(true);
+    setImportError("");
+    setImportStatus("Clustering problems into topic-wise sections...");
+
+    try {
+      const res = await axios.post("/api/sheets/ai-extract", {
+        text: importText.trim(),
+        title: importTitle.trim() || "Custom DSA Sheet"
+      });
+
+      if (res.data?.sheet) {
+        const newSheet = res.data.sheet;
+        const updated = [newSheet, ...sheets];
+        setSheets(updated);
+        setSelectedSheetId(newSheet._id);
+        saveCustomSheetsLocally(updated);
+        setIsImportModalOpen(false);
+        setImportText("");
+        setImportTitle("");
+        setImportSuccess(`Created "${newSheet.title}" with ${newSheet.sections?.reduce((a, s) => a + s.problems.length, 0)} problems!`);
+        setTimeout(() => setImportSuccess(""), 5000);
+      } else {
+        throw new Error("Could not parse problem list.");
+      }
+    } catch (err) {
+      console.error("Text import error:", err);
+      setImportError(err.response?.data?.error || err.message);
+    } finally {
+      setImportLoading(false);
+      setImportStatus("");
+    }
+  };
+
+  // Import JSON File
+  const handleImportJson = (e) => {
+    setImportError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (!parsed.title || !Array.isArray(parsed.sections)) {
+          throw new Error("Invalid AlgoCraft JSON schema: must include 'title' and 'sections' array.");
+        }
+
+        const res = await axios.post("/api/sheets", {
+          title: parsed.title,
+          description: parsed.description || "Imported JSON sheet",
+          sections: parsed.sections
+        });
+
+        if (res.data?.sheet) {
+          const updated = [res.data.sheet, ...sheets];
+          setSheets(updated);
+          setSelectedSheetId(res.data.sheet._id);
+          saveCustomSheetsLocally(updated);
+          setIsImportModalOpen(false);
+          setImportSuccess(`Imported "${res.data.sheet.title}"!`);
+          setTimeout(() => setImportSuccess(""), 4000);
+        }
+      } catch (err) {
+        setImportError("JSON parsing failed: " + err.message);
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Add section to current sheet
@@ -286,16 +470,42 @@ export default function SheetsPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => {
+              setImportError("");
+              setImportSuccess("");
+              setIsImportModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 hover:border-indigo-500/50 font-medium text-sm shadow-md transition-all cursor-pointer"
+            title="Upload PDF, CSV or JSON Sheet"
+          >
+            <UploadCloud className="w-4 h-4 text-indigo-400" />
+            <span>Import Sheet (PDF / Text)</span>
+          </button>
+
           <button
             onClick={() => setIsNewSheetModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-medium text-sm shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Create New Sheet</span>
+            <span>Create Blank Sheet</span>
           </button>
         </div>
       </div>
+
+      {/* Import Success Banner */}
+      {importSuccess && (
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-semibold flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <span>{importSuccess}</span>
+          </div>
+          <button onClick={() => setImportSuccess("")} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Sheet Switcher Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -553,9 +763,28 @@ export default function SheetsPage() {
                             <button
                               onClick={() => handleSolveWithAI(problem)}
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                              title="Breakdown problem with AlgoCraft AI"
                             >
                               <Sparkles className="w-3 h-3" />
-                              <span className="hidden sm:inline">Solve with AI</span>
+                              <span className="hidden sm:inline">Solve</span>
+                            </button>
+
+                            {/* Open in Code Editor Button */}
+                            <button
+                              onClick={() => {
+                                navigate("/playground", {
+                                  state: {
+                                    initialProblem: problem.name,
+                                    difficulty: problem.difficulty,
+                                    platform: problem.platform || "LeetCode"
+                                  }
+                                });
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                              title="Open in Code Editor with platform boilerplate"
+                            >
+                              <Code2 className="w-3 h-3 text-slate-400" />
+                              <span className="hidden md:inline">Code</span>
                             </button>
 
                             {/* Delete Problem */}
@@ -738,6 +967,294 @@ export default function SheetsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Custom Sheet Modal (PDF, Paste, JSON) */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-5 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Import Custom DSA Sheet</h3>
+                  <p className="text-xs text-slate-400">Add external sheets to track progress and solve in Studio</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!importLoading) setIsImportModalOpen(false);
+                }}
+                className="text-slate-500 hover:text-slate-300 p-1 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Supported Formats Info Banner */}
+            <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5 text-xs">
+              <div className="font-semibold text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Supported Sheet Formats</span>
+              </div>
+              <ul className="text-slate-400 space-y-1 list-disc pl-4">
+                <li><strong className="text-slate-300">PDF (.pdf):</strong> Striver's SDE Sheet, Love Babbar 450, NeetCode, Blind 75, or college PDFs. AI auto-extracts problems and clusters them by topic.</li>
+                <li><strong className="text-slate-300">Quick Paste / CSV:</strong> Paste problem titles line-by-line or formatted as <code>Problem, Topic, Difficulty, Platform</code>.</li>
+                <li><strong className="text-slate-300">JSON (.json):</strong> Native AlgoCraft sheet JSON format.</li>
+              </ul>
+            </div>
+
+            {/* Tab Switcher */}
+            <div className="flex items-center p-1 bg-slate-950 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => { setImportTab("pdf"); setImportError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
+                  importTab === "pdf"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <FileUp className="w-3.5 h-3.5" />
+                <span>PDF Auto-Analysis</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setImportTab("paste"); setImportError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
+                  importTab === "paste"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Quick Paste / CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setImportTab("json"); setImportError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
+                  importTab === "json"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>JSON Import</span>
+              </button>
+            </div>
+
+            {/* Error Banner */}
+            {importError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {/* TAB 1: PDF Upload */}
+            {importTab === "pdf" && (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Sheet Title (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Striver's SDE Sheet 2026"
+                    value={importTitle}
+                    onChange={(e) => setImportTitle(e.target.value)}
+                    className="w-full bg-slate-800 text-sm text-white px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="border-2 border-dashed border-slate-700 hover:border-indigo-500/60 rounded-2xl p-6 text-center transition-colors bg-slate-800/30">
+                  <input
+                    type="file"
+                    id="pdf-upload-input"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setPdfFile(file);
+                        if (!importTitle) setImportTitle(file.name.replace(/\.pdf$/i, ""));
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <label htmlFor="pdf-upload-input" className="cursor-pointer space-y-2 block">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mx-auto">
+                      <FileUp className="w-6 h-6" />
+                    </div>
+                    {pdfFile ? (
+                      <div>
+                        <div className="text-sm font-semibold text-white truncate max-w-xs mx-auto">
+                          {pdfFile.name}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {(pdfFile.size / 1024).toFixed(1)} KB · Click to change file
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-sm font-semibold text-white">
+                          Click to select or drag & drop DSA PDF
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                          Supports multi-page problem sheets up to 25MB
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
+                {importLoading && (
+                  <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-center gap-2.5 animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                    <span>{importStatus || "Analyzing PDF and extracting problems..."}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsImportModalOpen(false)}
+                    disabled={importLoading}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportPdf}
+                    disabled={!pdfFile || importLoading}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+                  >
+                    {importLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Analyzing with AI...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Extract & Create Sheet</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: Quick Paste / CSV */}
+            {importTab === "paste" && (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Sheet Title *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Blind 75 Sprint"
+                    value={importTitle}
+                    onChange={(e) => setImportTitle(e.target.value)}
+                    className="w-full bg-slate-800 text-sm text-white px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Paste Problems (one per line, numbered or CSV)
+                  </label>
+                  <textarea
+                    placeholder="Example:&#10;1. Two Sum - Easy - LeetCode&#10;2. Best Time to Buy and Sell Stock - Easy - LeetCode&#10;3. Contains Duplicate - Easy - LeetCode&#10;4. Maximum Subarray - Medium - LeetCode&#10;5. Reverse Linked List - Easy - LeetCode"
+                    value={importText}
+                    onChange={(e) => setImportText(e.target.value)}
+                    rows={6}
+                    className="w-full bg-slate-800 text-xs font-mono text-white p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                {importLoading && (
+                  <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-center gap-2.5 animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                    <span>{importStatus || "Clustering problems into topics..."}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsImportModalOpen(false)}
+                    disabled={importLoading}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportText}
+                    disabled={!importText.trim() || importLoading}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+                  >
+                    {importLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Clustering Problems...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Generate Sheet</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: JSON File Import */}
+            {importTab === "json" && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-400">
+                  Select a standard AlgoCraft sheet JSON file exported from another account or backup.
+                </p>
+
+                <div className="border-2 border-dashed border-slate-700 hover:border-indigo-500/60 rounded-2xl p-6 text-center transition-colors bg-slate-800/30">
+                  <input
+                    type="file"
+                    id="json-upload-input"
+                    accept=".json,application/json"
+                    onChange={handleImportJson}
+                    className="hidden"
+                  />
+                  <label htmlFor="json-upload-input" className="cursor-pointer space-y-2 block">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mx-auto">
+                      <FileSpreadsheet className="w-6 h-6" />
+                    </div>
+                    <div className="text-sm font-semibold text-white">
+                      Click to choose .json sheet file
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1">
+                      Must contain "title" and "sections" array
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsImportModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

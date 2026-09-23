@@ -607,10 +607,12 @@ public:
 
 /**
  * Builds language-correct platform template (function signature skeleton)
- * for the given problem — what the programmer pastes into LeetCode/GFG.
+ * for the given problem — matching LeetCode / GeeksforGeeks / HackerRank conventions.
  */
-const buildPlatformTemplate = (lang, problemName, topic) => {
-  // Infer a reasonable function name from problem name
+const buildPlatformTemplate = (lang, problemName, topic, platform = "LeetCode") => {
+  const isGFG = platform?.toLowerCase().includes("geek") || platform?.toLowerCase().includes("gfg");
+  
+  // Infer a canonical camelCase function name from problem name
   const fnName = (problemName || "solve")
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, "")
@@ -619,27 +621,194 @@ const buildPlatformTemplate = (lang, problemName, topic) => {
     .map((w, i) => i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1))
     .join("");
 
+  const lowerTopic = (topic || "").toLowerCase();
+  const isString = lowerTopic.includes("string");
+  const isTree = lowerTopic.includes("tree");
+  const isList = lowerTopic.includes("list");
+
+  let cppParams = isGFG ? "vector<int>& arr" : "vector<int>& nums";
+  let javaParams = isGFG ? "int[] arr" : "int[] nums";
+  let pyParams = isGFG ? "arr: List[int]" : "nums: List[int]";
+  let returnType = "int";
+
+  if (isString) {
+    cppParams = "string s";
+    javaParams = "String s";
+    pyParams = "s: str";
+  } else if (isList) {
+    cppParams = "ListNode* head";
+    javaParams = "ListNode head";
+    pyParams = "head: Optional[ListNode]";
+    returnType = "ListNode*";
+  } else if (isTree) {
+    cppParams = "TreeNode* root";
+    javaParams = "TreeNode root";
+    pyParams = "root: Optional[TreeNode]";
+  }
+
   const templates = {
-    "C++": `#include <vector>\n#include <string>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    // TODO: Choose correct return type and parameters for "${problemName}"\n    int ${fnName}(vector<int>& nums) {\n        // Write your solution here\n        \n    }\n};`,
-    "Java": `import java.util.*;\n\nclass Solution {\n    // TODO: Choose correct return type and parameters for "${problemName}"\n    public int ${fnName}(int[] nums) {\n        // Write your solution here\n        return 0;\n    }\n}`,
-    "Python": `from typing import List, Dict, Optional\n\nclass Solution:\n    # TODO: Choose correct parameters and return type for "${problemName}"\n    def ${fnName}(self, nums: List[int]) -> int:\n        # Write your solution here\n        pass`,
-    "JavaScript": `/**\n * @param {number[]} nums\n * @return {number}\n */\nvar ${fnName} = function(nums) {\n    // Write your solution here\n    \n};`,
-    "TypeScript": `function ${fnName}(nums: number[]): number {\n    // Write your solution here\n    \n}`,
-    "C": `#include <stdlib.h>\n\n/* TODO: Choose correct return type and parameters for "${problemName}" */\nint ${fnName}(int* nums, int numsSize) {\n    /* Write your solution here */\n    return 0;\n}`
+    "C++": `#include <vector>\n#include <string>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    // Ready to submit on ${platform}\n    ${returnType} ${fnName}(${cppParams}) {\n        // Your solution code here\n        \n    }\n};`,
+    "Java": `import java.util.*;\n\nclass Solution {\n    // Ready to submit on ${platform}\n    public ${returnType === "ListNode*" ? "ListNode" : returnType} ${fnName}(${javaParams}) {\n        // Your solution code here\n        return ${returnType === "int" ? "0" : "null"};\n    }\n}`,
+    "Python": `from typing import List, Dict, Optional\n\nclass Solution:\n    # Ready to submit on ${platform}\n    def ${fnName}(self, ${pyParams}) -> ${returnType === "int" ? "int" : "Optional[object]"}:\n        # Your solution code here\n        pass`,
+    "JavaScript": `/**\n * @param {${isString ? "string" : "number[]"}} ${isGFG ? "arr" : "nums"}\n * @return {number}\n */\nvar ${fnName} = function(${isGFG ? "arr" : "nums"}) {\n    // Ready to submit on ${platform}\n    \n};`,
+    "TypeScript": `function ${fnName}(${isGFG ? "arr: number[]" : "nums: number[]"}): number {\n    // Ready to submit on ${platform}\n    return 0;\n}`,
+    "C": `#include <stdlib.h>\n#include <string.h>\n\n/* Ready to submit on ${platform} */\nint ${fnName}(int* nums, int numsSize) {\n    /* Your solution code here */\n    return 0;\n}`
   };
 
   return {
-    cpp: templates["C++"] || templates["C++"],
+    cpp: templates["C++"],
     java: templates["Java"],
     python: templates["Python"],
     javascript: templates["JavaScript"] || ""
   };
 };
 
-// ─── Classic solution registry ────────────────────────────────────────────────
+// ─── Additional Classic Solutions (Platform Ready) ───────────────────────────
+
+const buildPalindromeSolution = (lang) => {
+  const approaches = {
+    "C++": [
+      {
+        level: "Brute Force", name: "Clean String and Reverse",
+        intuition: "Filter alphanumeric characters, convert to lowercase, and check if equals its reverse.",
+        stepByStep: ["Filter alphanumeric chars into a new string.", "Reverse the cleaned string.", "Compare with original."],
+        code: `#include <string>
+#include <cctype>
+#include <algorithm>
+using namespace std;
+
+class Solution {
+public:
+    bool isPalindrome(string s) {
+        string filtered = "";
+        for (char c : s) {
+            if (isalnum(c)) filtered += tolower(c);
+        }
+        string rev = filtered;
+        reverse(rev.begin(), rev.end());
+        return filtered == rev;
+    }
+};`,
+        timeComplexity: "O(n)", spaceComplexity: "O(n)",
+        complexityReason: "Constructs new cleaned string of length n.",
+        tradeOffs: "Simple logic but allocates extra O(n) memory.",
+        codeExplanation: "Uses std::isalnum and std::tolower to normalize string."
+      },
+      {
+        level: "Optimal", name: "Two Pointers In-Place",
+        intuition: "Check characters from both ends converging inwards, skipping non-alphanumeric in O(1) space.",
+        stepByStep: ["Set left = 0, right = s.length() - 1.", "Skip non-alphanumeric chars on both sides.", "If lowercase chars mismatch return false.", "If pointers cross, return true."],
+        code: `#include <string>
+#include <cctype>
+using namespace std;
+
+class Solution {
+public:
+    bool isPalindrome(string s) {
+        int left = 0, right = s.length() - 1;
+        while (left < right) {
+            while (left < right && !isalnum(s[left])) left++;
+            while (left < right && !isalnum(s[right])) right--;
+            if (tolower(s[left]) != tolower(s[right])) return false;
+            left++;
+            right--;
+        }
+        return true;
+    }
+};`,
+        timeComplexity: "O(n)", spaceComplexity: "O(1)",
+        complexityReason: "Single two-pointer traversal with zero auxiliary allocations.",
+        tradeOffs: "Optimal time and space.",
+        codeExplanation: "Two pointers move inwards and skip whitespace/punctuation in-place."
+      }
+    ],
+    "Python": [
+      {
+        level: "Optimal", name: "Two Pointers In-Place",
+        intuition: "Converge two pointers while skipping non-alphanumeric characters.",
+        stepByStep: ["Initialize left = 0, right = len(s) - 1.", "Skip non-alphanumeric.", "Compare lowercased characters."],
+        code: `class Solution:
+    def isPalindrome(self, s: str) -> bool:
+        left, right = 0, len(s) - 1
+        while left < right:
+            while left < right and not s[left].isalnum():
+                left += 1
+            while left < right and not s[right].isalnum():
+                right -= 1
+            if s[left].lower() != s[right].lower():
+                return False
+            left += 1
+            right -= 1
+        return True`,
+        timeComplexity: "O(n)", spaceComplexity: "O(1)",
+        complexityReason: "Visits each character at most twice in constant memory.",
+        tradeOffs: "In-place, ideal for memory-constrained platforms.",
+        codeExplanation: "Uses python str.isalnum() and str.lower() pointers directly."
+      }
+    ],
+    "Java": [
+      {
+        level: "Optimal", name: "Two Pointers In-Place",
+        intuition: "Two pointers converging inwards in-place with Character.isLetterOrDigit().",
+        stepByStep: ["left = 0, right = s.length() - 1.", "Skip non-alphanumeric.", "Compare Character.toLowerCase()."],
+        code: `class Solution {
+    public boolean isPalindrome(String s) {
+        int left = 0, right = s.length() - 1;
+        while (left < right) {
+            while (left < right && !Character.isLetterOrDigit(s.charAt(left))) left++;
+            while (left < right && !Character.isLetterOrDigit(s.charAt(right))) right--;
+            if (Character.toLowerCase(s.charAt(left)) != Character.toLowerCase(s.charAt(right))) {
+                return false;
+            }
+            left++;
+            right--;
+        }
+        return true;
+    }
+}`,
+        timeComplexity: "O(n)", spaceComplexity: "O(1)",
+        complexityReason: "Traverses string once using primitives.",
+        tradeOffs: "Optimal space without substring copies.",
+        codeExplanation: "Character helper methods check unicode alphanumeric values."
+      }
+    ]
+  };
+
+  const app = approaches[lang] || approaches["C++"];
+  return {
+    intuition: "A palindrome reads identical forwards and backwards. By filtering non-alphanumeric characters and comparing mirrored indices, we can verify the invariant in O(n) time.",
+    approaches: app,
+    dryRun: {
+      inputExample: 's = "A man, a plan, a canal: Panama"',
+      traceSteps: [
+        { step: 1, variables: "left=0 ('A'), right=29 ('a')", state: "Match 'a'=='a'", explanation: "Both sides point to matching valid characters." },
+        { step: 2, variables: "left=2 ('m'), right=27 ('m')", state: "Match 'm'=='m'", explanation: "Pointers advance and continue matching." },
+        { step: 3, variables: "left=15 ('c'), right=15 ('c')", state: "Pointers meet", explanation: "All characters verified. Returns true." }
+      ],
+      output: "true"
+    },
+    edgeCases: [
+      "Empty string or single character (always true)",
+      "String with only punctuation and spaces (e.g. \"., :\")",
+      "Case insensitivity ('P' vs 'p')",
+      "Strings with numbers ('0P')"
+    ],
+    commonMistakes: [
+      "Creating entire reversed string copies leading to O(n) space.",
+      "Forgetting to check bounds while advancing inner pointer loops.",
+      "Not handling numbers alongside alphabetic characters."
+    ],
+    interviewTips: [
+      "Ask if case matters and which characters count as alphanumeric.",
+      "Offer the in-place two-pointer approach immediately to show memory optimization awareness."
+    ],
+    platformTemplate: buildPlatformTemplate(lang, "Valid Palindrome", "Two Pointers")
+  };
+};
 
 const CLASSIC_SOLUTIONS = {
-  "two sum": (lang) => buildTwoSumSolution(lang)
+  "two sum": (lang, platform) => buildTwoSumSolution(lang),
+  "valid palindrome": (lang, platform) => buildPalindromeSolution(lang)
 };
 
 // ─── Main export ──────────────────────────────────────────────────────────────
@@ -656,7 +825,7 @@ export const buildFallbackSolution = (problemData) => {
 
   // Check if we have a hand-crafted classic solution
   if (CLASSIC_SOLUTIONS[nameKey]) {
-    return CLASSIC_SOLUTIONS[nameKey](lang);
+    return CLASSIC_SOLUTIONS[nameKey](lang, problemData.platform || "LeetCode");
   }
 
   // Generic multi-language fallback
@@ -740,6 +909,6 @@ export const buildFallbackSolution = (problemData) => {
       "Walk through an edge case example with the interviewer before finalizing your solution.",
       "Discuss trade-offs: time vs space, sorted vs unsorted input variants."
     ],
-    platformTemplate: buildPlatformTemplate(lang, name, topic)
+    platformTemplate: buildPlatformTemplate(lang, name, topic, problemData.platform || "LeetCode")
   };
 };
